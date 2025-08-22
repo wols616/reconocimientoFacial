@@ -169,6 +169,38 @@ def get_photo(name):
     else:
         return jsonify({'message': 'Foto no encontrada'}), 404
 
+@app.route('/rename', methods=['POST'])
+def rename():
+    """
+    Cambiar el nombre de una persona (y su foto asociada)
+    """
+    old_name = request.form.get('old_name')
+    new_name = request.form.get('new_name')
+
+    if not old_name or not new_name:
+        return jsonify({'message': 'Debe proporcionar old_name y new_name'}), 400
+
+    # Buscar foto existente
+    old_path = get_existing_photo_path(old_name)
+    if not old_path:
+        return jsonify({'message': f'No se encontró la fotografía de {old_name}'}), 404
+
+    # Obtener extensión
+    ext = os.path.splitext(old_path)[1].lower()
+    new_path = os.path.join(image_folder, f"{new_name}{ext}")
+
+    # Verificar que no exista ya un archivo con el nuevo nombre
+    if os.path.exists(new_path):
+        return jsonify({'message': 'Ya existe una persona con ese nuevo nombre'}), 400
+
+    # Renombrar el archivo
+    os.rename(old_path, new_path)
+
+    # Recargar rostros
+    load_known_faces()
+
+    return jsonify({'message': f'Nombre cambiado de {old_name} a {new_name} exitosamente'})
+
 
 @app.route('/status', methods=['GET'])
 def status():
